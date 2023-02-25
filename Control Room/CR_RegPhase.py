@@ -270,6 +270,9 @@ def register_drones(t: int, q: int, polynomial: list(list())):
         s.listen(1)
         conn, addr = s.accept()
 
+        # Sending the number of drones connected till now so it nows which numbered drone it is
+        send_data_with_length(str(t).encode(), conn)
+
         # Sending the temporary ID of the drone to the drone
         send_data_with_length(str(temp_ID_drones).encode(), conn)
 
@@ -322,7 +325,7 @@ def main():
     
     # for i in range(max_num_of_drones):
     #     # Register the drones
-    #     register_drones(i, q, polynomial)
+    #     register_drones(i + 1, q, polynomial)
 
 if __name__ == "__main__":
     main()

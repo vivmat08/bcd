@@ -19,6 +19,7 @@ def main():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect(('localhost', 5050))
 
+        index_drone = recv_data_with_length(s)
         temp_ID_drone = recv_data_with_length(s)
         pseudo_ID_drone = recv_data_with_length(s)
         polynomial_share = recv_data_with_length(s)
@@ -37,7 +38,7 @@ def main():
     # Generating private key of the drone from the private value received from the CR
     private_key = ec.derive_private_key(int.from_bytes(private_value, byteorder='big'), ec.SECP256K1())
 
-    with open("Drone_credentials.txt", "w+") as f:
+    with open(f"Drone{index_drone}_credentials.txt", "w+") as f:
         f.write("PID:\t" + str(pseudo_ID_drone) + "\n")
         f.write("Polynomial share:\t" + str(polynomial_share) + "\n")
         f.write("Cert:\t" + str(cert_drone) + "\n")
@@ -53,13 +54,13 @@ def main():
 
 
 
-    with open('../Public/Drone_public.pem', 'wb') as f:
+    with open(f'../Public/Drone{index_drone}_public.pem', 'wb') as f:
         f.write(public_key_text)
 
-    with open('Drone_public.pem', 'wb') as f:
+    with open(f'Drone{index_drone}_public.pem', 'wb') as f:
         f.write(public_key_text)
 
-    with open('Drone_private.pem', 'wb') as f:
+    with open(f'Drone{index_drone}_private.pem', 'wb') as f:
         f.write(serialized_private)
 
 
