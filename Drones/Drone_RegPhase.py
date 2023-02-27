@@ -17,7 +17,7 @@ def recv_data_with_length(s: socket.socket) -> bytes:
 def main():
     # Connect to the CR to receive credentials
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect(('localhost', 5050))
+        s.connect(('localhost', 5051))
 
         index_drone = recv_data_with_length(s)
         temp_ID_drone = recv_data_with_length(s)
@@ -30,26 +30,30 @@ def main():
         
         s.close()
 
+    index_drone = int(index_drone.decode('utf-8'))
+    temp_ID_drone = int(temp_ID_drone.decode('utf-8'))
     pseudo_ID_drone = int.from_bytes(pseudo_ID_drone, byteorder='big')
     polynomial_share = pickle.loads(polynomial_share)
     cert_drone = cert_drone.decode()
     ID_CR = ID_CR.decode()
+    private_value = int(private_value.decode())
 
     # Generating private key of the drone from the private value received from the CR
-    private_key = ec.derive_private_key(int.from_bytes(private_value, byteorder='big'), ec.SECP256K1())
+    private_key = ec.derive_private_key(private_value, ec.SECP256K1())
 
     with open(f"Drone{index_drone}_credentials.txt", "w+") as f:
-        f.write("PID:\t" + str(pseudo_ID_drone) + "\n")
-        f.write("Polynomial share:\t" + str(polynomial_share) + "\n")
-        f.write("Cert:\t" + str(cert_drone) + "\n")
-        f.write("ID_CR:\t" + str(ID_CR) + "\n")
+        f.write(f"TID:\t{str(temp_ID_drone)}\n")
+        f.write(f"PID:\t{str(pseudo_ID_drone)}\n")
+        f.write(f"Polynomial share:\t{str(polynomial_share)}\n")
+        f.write(f"Cert:\t{str(cert_drone)}\n")
+        f.write(f"ID_CR:\t{str(ID_CR)}\n")
     
 
     # Serializing the private key of the drone to a file
     serialized_private = private_key.private_bytes(
     encoding=serialization.Encoding.PEM,
     format=serialization.PrivateFormat.PKCS8,
-    encryption_algorithm=serialization.BestAvailableEncryption(b'testpassword')
+    encryption_algorithm=serialization.NoEncryption()
     )
 
 

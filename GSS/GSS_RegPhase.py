@@ -17,7 +17,7 @@ def recv_data_with_length(s: socket.socket) -> bytes:
 def main():
     # Connect to the CR to receive credentials
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect(('localhost', 5050))
+        s.connect(('localhost', 5051))
 
         pseudo_ID_GSS = recv_data_with_length(s)
         polynomial_share = recv_data_with_length(s)

@@ -171,7 +171,7 @@ def register_GSS(t: int, q: int, polynomial: list(list())):
 
     # Send the PID_GSS, polynomial share, certificate, and ID_CR to the GSS using sockets
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('localhost', 5050))
+        s.bind(('localhost', 5051))
         s.listen(1)
         conn, addr = s.accept()
 
@@ -188,10 +188,10 @@ def register_GSS(t: int, q: int, polynomial: list(list())):
     with open('../Public/GSS_public_secret.pem', 'wb') as f:
         f.write(serialized_public_secret)
 
-    print(int_value_of_PID)
-    print(pickle.dumps(polynomial_share))
-    print(cert_GSS)
-    print(ID_CR)
+    # print(int_value_of_PID)
+    # print(pickle.dumps(polynomial_share))
+    # print(cert_GSS)
+    # print(ID_CR)
 
 
 
@@ -200,10 +200,10 @@ def register_drones(t: int, q: int, polynomial: list(list())):
     # Read unique ID of CR from the common ID file
     with open('ID.txt', 'r') as f:
         # Skipping the first two lines containing the ID of the CR and GSS
-        for _ in range(t + 2):
+        for _ in range(t + 1):
             f.readline()
-
-        ID_drone = f.readline().split('\t')[1]
+        line = f.readline()
+        ID_drone = line.split('\t')[1]
         
     # Generate pseudo identity of drones
     pseudo_ID_drones = generate_PID(q, ID_drone)
@@ -266,7 +266,7 @@ def register_drones(t: int, q: int, polynomial: list(list())):
 
     # Send the PID_drones, polynomial share, certificate, and ID_CR to the drones using sockets
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('localhost', 5050))
+        s.bind(('localhost', 5051))
         s.listen(1)
         conn, addr = s.accept()
 
@@ -295,7 +295,7 @@ def register_drones(t: int, q: int, polynomial: list(list())):
         # Sending public key to drone
         send_data_with_length(serialized_public_secret, conn)
 
-    with open(f'drone{t + 1}_public_secret.pem', 'wb') as f:
+    with open(f'../Public/Drone{t}_public_secret.pem', 'wb') as f:
         f.write(serialized_public_secret)
 
 
@@ -312,20 +312,24 @@ def main():
         f.write(f"\nGSS\t{str(randbelow(q))}")
 
         for i in range(max_num_of_drones):
-            f.write(f"\nDrone{i}\t{str(randbelow(q))}")
+            f.write(f"\nDrone{i + 1}\t{str(randbelow(q))}")
 
     # Degree of polynomial, much higher than the number of drones
-    t = max_num_of_drones ** 2
+    t = max_num_of_drones * 2
 
     # Generate a symmetric t-degree bivariate polynomial over GF(q)
     polynomial = generate_t_degree_poly(t, q)
 
     # Register the GSS
     register_GSS(t, q, polynomial)
+
+    # To remove previous TIDs
+    with open('TID.txt', 'w') as f:
+        pass
     
-    # for i in range(max_num_of_drones):
-    #     # Register the drones
-    #     register_drones(i + 1, q, polynomial)
+    for i in range(max_num_of_drones):
+        # Register the drones
+        register_drones(i + 1, q, polynomial)
 
 if __name__ == "__main__":
     main()
