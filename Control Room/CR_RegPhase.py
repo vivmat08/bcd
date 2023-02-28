@@ -110,8 +110,18 @@ def send_data_with_length(data: bytes, socket: socket.socket):
     socket.sendall(pack('>I', length))
     socket.sendall(data)
 
+'''
+Receive bytes data from the TCP stream. Data is accompanied
+by its length first.
+'''
+def recv_data_with_length(s: socket.socket) -> bytes:
+    data_len = s.recv(4)
+    data_len = unpack('>I', data_len)[0]
+    data = s.recv(data_len)
+    return data
 
-def register_GSS(t: int, q: int, polynomial: list(list())):
+
+def register_GSS(t: int, q: int, polynomial: list(list()), num_of_drones: int):
 
     # Read unique ID of GSS from the common ID file
     with open('ID.txt', 'r') as f:
@@ -171,7 +181,7 @@ def register_GSS(t: int, q: int, polynomial: list(list())):
 
     # Send the PID_GSS, polynomial share, certificate, and ID_CR to the GSS using sockets
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('localhost', 5051))
+        s.bind(('localhost', 5050))
         s.listen(1)
         conn, addr = s.accept()
 
@@ -184,6 +194,8 @@ def register_GSS(t: int, q: int, polynomial: list(list())):
         send_data_with_length(str(cert_GSS).encode(), conn)
 
         send_data_with_length(ID_CR.encode(), conn)
+
+        send_data_with_length(str(num_of_drones).encode(), conn)
 
     with open('../Public/GSS_public_secret.pem', 'wb') as f:
         f.write(serialized_public_secret)
@@ -266,7 +278,7 @@ def register_drones(t: int, q: int, polynomial: list(list())):
 
     # Send the PID_drones, polynomial share, certificate, and ID_CR to the drones using sockets
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('localhost', 5051))
+        s.bind(('localhost', 5050))
         s.listen(1)
         conn, addr = s.accept()
 
@@ -295,8 +307,24 @@ def register_drones(t: int, q: int, polynomial: list(list())):
         # Sending public key to drone
         send_data_with_length(serialized_public_secret, conn)
 
+        s.close()
+
     with open(f'../Public/Drone{t}_public_secret.pem', 'wb') as f:
         f.write(serialized_public_secret)
+
+    # Send the {TID, PID} of drones to the GSS
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+
+        s.connect(('localhost', 8080 + t - 1))
+
+        # Sending the TID
+        send_data_with_length(str(temp_ID_drones).encode(), s)
+
+        # Sending the PID
+        send_data_with_length(pseudo_ID_drones, s)
+    
+        s.close()
+        
 
 
 def main():
@@ -321,7 +349,7 @@ def main():
     polynomial = generate_t_degree_poly(t, q)
 
     # Register the GSS
-    register_GSS(t, q, polynomial)
+    register_GSS(t, q, polynomial, max_num_of_drones)
 
     # To remove previous TIDs
     with open('TID.txt', 'w') as f:
